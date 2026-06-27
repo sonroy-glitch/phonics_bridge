@@ -12,55 +12,107 @@ export function ParagraphDisplay({ paragraph }: ParagraphDisplayProps) {
     const text = paragraph.text;
     const targetWords = paragraph.targetWords;
 
-    const parts: { text: string; isTarget: boolean; phoneme?: string }[] = [];
-    let lastIndex = 0;
-
-    // Sort targets by startIndex
-    const sorted = [...targetWords].sort((a, b) => a.startIndex - b.startIndex);
-
-    sorted.forEach((tw) => {
-      if (tw.startIndex > lastIndex) {
-        parts.push({ text: text.slice(lastIndex, tw.startIndex), isTarget: false });
-      }
-      parts.push({ text: text.slice(tw.startIndex, tw.endIndex), isTarget: true, phoneme: tw.phoneme });
-      lastIndex = tw.endIndex;
-    });
-
-    if (lastIndex < text.length) {
-      parts.push({ text: text.slice(lastIndex), isTarget: false });
-    }
-
-    return parts.map((part, i) =>
-      part.isTarget ? (
-        <span
-          key={i}
-          className="relative inline-block cursor-help group"
-          style={{
-            color: '#0d9488',
-            fontWeight: 700,
-            borderBottom: '2.5px dotted #0d9488',
-            paddingBottom: '1px',
-          }}
-          title={`Focus: ${part.phoneme}`}
-        >
-          {part.text}
-          {/* Phoneme tooltip */}
-          <span
-            className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs text-white px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap pointer-events-none z-10"
-            style={{
-              background: '#0d9488',
-              boxShadow: '0 4px 12px rgba(13,148,136,0.3)',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600,
-            }}
-          >
-            /{part.phoneme}/
-          </span>
-        </span>
-      ) : (
-        <span key={i}>{part.text}</span>
-      )
+    const hasIndices = targetWords.every(
+      (tw) => typeof tw.startIndex === 'number' && typeof tw.endIndex === 'number'
     );
+
+    if (hasIndices) {
+      const parts: { text: string; isTarget: boolean; phoneme?: string }[] = [];
+      let lastIndex = 0;
+
+      // Sort targets by startIndex
+      const sorted = [...targetWords].sort((a, b) => (a.startIndex || 0) - (b.startIndex || 0));
+
+      sorted.forEach((tw) => {
+        const start = tw.startIndex || 0;
+        const end = tw.endIndex || 0;
+        if (start > lastIndex) {
+          parts.push({ text: text.slice(lastIndex, start), isTarget: false });
+        }
+        parts.push({ text: text.slice(start, end), isTarget: true, phoneme: tw.phoneme });
+        lastIndex = end;
+      });
+
+      if (lastIndex < text.length) {
+        parts.push({ text: text.slice(lastIndex), isTarget: false });
+      }
+
+      return parts.map((part, i) =>
+        part.isTarget ? (
+          <span
+            key={i}
+            className="relative inline-block cursor-help group"
+            style={{
+              color: '#0d9488',
+              fontWeight: 700,
+              borderBottom: '2.5px dotted #0d9488',
+              paddingBottom: '1px',
+            }}
+            title={`Focus: ${part.phoneme}`}
+          >
+            {part.text}
+            {/* Phoneme tooltip */}
+            <span
+              className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs text-white px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap pointer-events-none z-10"
+              style={{
+                background: '#0d9488',
+                boxShadow: '0 4px 12px rgba(13,148,136,0.3)',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+              }}
+            >
+              /{part.phoneme}/
+            </span>
+          </span>
+        ) : (
+          <span key={i}>{part.text}</span>
+        )
+      );
+    } else {
+      // String-matching tokenization logic
+      const targetSet = new Map(
+        targetWords.map((tw) => [tw.word.toLowerCase().replace(/[^a-z0-9]/g, ''), tw.phoneme])
+      );
+
+      // Split text on word boundaries capture group so they are returned as tokens
+      const tokens = text.split(/(\b[a-zA-Z0-9']+\b)/);
+
+      return tokens.map((token, i) => {
+        const cleanToken = token.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const phoneme = targetSet.get(cleanToken);
+
+        if (phoneme) {
+          return (
+            <span
+              key={i}
+              className="relative inline-block cursor-help group"
+              style={{
+                color: '#0d9488',
+                fontWeight: 700,
+                borderBottom: '2.5px dotted #0d9488',
+                paddingBottom: '1px',
+              }}
+              title={`Focus: ${phoneme}`}
+            >
+              {token}
+              {/* Phoneme tooltip */}
+              <span
+                className="absolute -top-7 left-1/2 -translate-x-1/2 text-xs text-white px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap pointer-events-none z-10"
+                style={{
+                  background: '#0d9488',
+                  boxShadow: '0 4px 12px rgba(13,148,136,0.3)',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 600,
+                }}
+              >
+                /{phoneme}/
+              </span>
+            </span>
+          );
+        }
+        return <span key={i}>{token}</span>;
+      });
+    }
   };
 
   return (
