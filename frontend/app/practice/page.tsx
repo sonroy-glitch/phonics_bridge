@@ -1,22 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ParagraphDisplay } from '@/components/practice/ParagraphDisplay';
 import { RecordButton } from '@/components/practice/RecordButton';
 import { ResultsDisplay } from '@/components/practice/ResultsDisplay';
 import { practiceParagraphs } from '@/lib/mock-data';
+import { useAuth } from '@/lib/auth-context';
+import { BASE_API_URL } from '@/lib/config';
+import { PracticeParagraph } from '@/lib/types';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Home } from 'lucide-react';
 
 export default function PracticePage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [sessionResult, setSessionResult] = useState<any>(null);
+  const [paragraphs, setParagraphs] = useState<PracticeParagraph[]>([]);
+  const [isGenerating, setIsGenerating] = useState(true);
 
-  const currentParagraph = practiceParagraphs[currentParagraphIndex];
-  const nextParagraphExists = currentParagraphIndex < practiceParagraphs.length - 1;
-  const progress = ((currentParagraphIndex + 1) / practiceParagraphs.length) * 100;
+  useEffect(() => {
+    if (authLoading) return;
+
+    let active = true;
+    const fetchSentences = async () => {
+      try {
+        const res = await fetch(`${BASE_API_URL}/generate-sentence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            choice: '',
+            userId: user?.role === 'teacher' || user?.role === 'learner' ? user.id : undefined,
+            studentId: user?.role === 'student' ? user.id : undefined,
+          }),
+        });
+
+        if (!res.ok) throw new Error('Failed to generate sentences');
+
+        const text = await res.text();
+        const data = JSON.parse(text);
+        
+        if (active) {
+          const formatted: PracticeParagraph[] = [
+            {
+              id: 'gen-1',
+              text: data.text1 || '',
+              targetWords: data.focus_words_1 || [],
+            },
+            {
+              id: 'gen-2',
+              text: data.text2 || '',
+              targetWords: data.focus_words_2 || [],
+            },
+            {
+              id: 'gen-3',
+              text: data.text3 || '',
+              targetWords: data.focus_words_3 || [],
+            },
+          ];
+          setParagraphs(formatted);
+          setIsGenerating(false);
+        }
+      } catch (err) {
+        console.error('Error generating sentences:', err);
+        if (active) {
+          setParagraphs(practiceParagraphs);
+          setIsGenerating(false);
+        }
+      }
+    };
+
+    fetchSentences();
+    return () => {
+      active = false;
+    };
+  }, [user, authLoading]);
+
+  const currentParagraph = paragraphs[currentParagraphIndex] || practiceParagraphs[0];
+  const nextParagraphExists = paragraphs.length > 0 && currentParagraphIndex < paragraphs.length - 1;
+  const progress = paragraphs.length > 0 ? ((currentParagraphIndex + 1) / paragraphs.length) * 100 : 0;
 
   const handleRecordComplete = (apiData: any) => {
     let parsedData = { error_words: [], error_types: [], analysis: '' };
@@ -69,6 +132,41 @@ export default function PracticePage() {
     }
   };
 
+  if (isGenerating) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6 p-4 md:p-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="relative w-24 h-24">
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{ background: 'rgba(13,148,136,0.06)' }}
+          />
+          <div
+            className="absolute inset-2 rounded-full border-4 border-t-transparent"
+            style={{
+              borderColor: 'rgba(13,148,136,0.15)',
+              borderTopColor: '#0d9488',
+              animation: 'spin 0.9s linear infinite',
+            }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <BookOpen className="w-7 h-7" style={{ color: '#0d9488', opacity: 0.6 }} />
+          </div>
+        </div>
+        <div className="text-center space-y-2">
+          <h2
+            className="text-xl font-bold"
+            style={{ fontFamily: 'Outfit, sans-serif', color: '#1f2937' }}
+          >
+            Generating your Phonics Session...
+          </h2>
+          <p className="text-sm max-w-xs mx-auto" style={{ color: '#6b7280' }}>
+            We're analyzing your weak sounds to create customized practice sentences.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 p-4 md:p-8">
 
@@ -90,7 +188,7 @@ export default function PracticePage() {
                 Practice Session
               </h1>
               <p className="text-xs" style={{ color: '#6b7280' }}>
-                Paragraph {currentParagraphIndex + 1} of {practiceParagraphs.length}
+                Paragraph {currentParagraphIndex + 1} of {paragraphs.length}
               </p>
             </div>
           </div>
