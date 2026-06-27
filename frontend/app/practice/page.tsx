@@ -1,0 +1,190 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { ParagraphDisplay } from '@/components/practice/ParagraphDisplay';
+import { RecordButton } from '@/components/practice/RecordButton';
+import { ResultsDisplay } from '@/components/practice/ResultsDisplay';
+import { practiceParagraphs } from '@/lib/mock-data';
+import Link from 'next/link';
+import { ArrowRight, BookOpen, Home } from 'lucide-react';
+
+export default function PracticePage() {
+  const [currentParagraphIndex, setCurrentParagraphIndex] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+  const [sessionResult, setSessionResult] = useState<any>(null);
+
+  const currentParagraph = practiceParagraphs[currentParagraphIndex];
+  const nextParagraphExists = currentParagraphIndex < practiceParagraphs.length - 1;
+  const progress = ((currentParagraphIndex + 1) / practiceParagraphs.length) * 100;
+
+  const handleRecordComplete = (apiData: any) => {
+    let parsedData = { error_words: [], error_types: [], analysis: '' };
+    try {
+      parsedData = JSON.parse(apiData.data || '{}');
+    } catch (e) {
+      console.warn("Could not parse Llama response", e);
+      parsedData.analysis = apiData.data || '';
+    }
+
+    const errorWords = parsedData.error_words || [];
+    const analysisFeedback = parsedData.analysis || '';
+
+    const results = currentParagraph.targetWords.map((targetWord) => {
+      const targetClean = targetWord.word.toLowerCase().replace(/[^a-z]/g, '');
+
+      const spokenWord = apiData.words?.find(
+        (w: any) => w.word.toLowerCase().replace(/[^a-z]/g, '') === targetClean
+      );
+
+      const matchesError = errorWords.some(
+        (ew: string) => ew.toLowerCase().replace(/[^a-z]/g, '') === targetClean
+      );
+
+      const isCorrect = spokenWord
+        ? (!matchesError && spokenWord.accuracyScore >= 80 && (spokenWord.errorType === 'None' || !spokenWord.errorType))
+        : false;
+
+      return {
+        word: targetWord.word,
+        correct: isCorrect,
+        said: spokenWord?.word || '???',
+        phonemeFocus: targetWord.phoneme,
+        explanation: isCorrect ? '' : analysisFeedback,
+      };
+    });
+
+    setSessionResult({
+      accuracy: Math.round(apiData.scores?.accuracy || 0),
+      results,
+    });
+    setShowResults(true);
+  };
+
+  const handleNextParagraph = () => {
+    if (nextParagraphExists) {
+      setCurrentParagraphIndex((prev) => prev + 1);
+      setShowResults(false);
+      setSessionResult(null);
+    }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6 p-4 md:p-8">
+
+      {/* ── Header ── */}
+      <div className="animate-fade-in-up">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md"
+              style={{ background: 'linear-gradient(135deg, #0d9488, #059669)' }}
+            >
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1
+                className="text-2xl font-extrabold leading-tight"
+                style={{ fontFamily: 'Outfit, sans-serif', color: '#1f2937', letterSpacing: '-0.02em' }}
+              >
+                Practice Session
+              </h1>
+              <p className="text-xs" style={{ color: '#6b7280' }}>
+                Paragraph {currentParagraphIndex + 1} of {practiceParagraphs.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Progress badge */}
+          <div
+            className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold"
+            style={{ background: 'rgba(13,148,136,0.1)', color: '#0d9488', fontFamily: 'Inter, sans-serif' }}
+          >
+            {Math.round(progress)}% done
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="progress-track">
+          <div
+            className="progress-fill"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* ── Paragraph display ── */}
+      <ParagraphDisplay paragraph={currentParagraph} />
+
+      {/* ── Recording or Results ── */}
+      {!showResults ? (
+        <div
+          className="glass-card p-8 animate-fade-in-up delay-100"
+          style={{ textAlign: 'center' }}
+        >
+          <p
+            className="text-sm font-semibold mb-1"
+            style={{ color: '#0d9488', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '11px' }}
+          >
+            Pronunciation Check
+          </p>
+          <p
+            className="text-xl font-bold mb-6"
+            style={{ fontFamily: 'Outfit, sans-serif', color: '#1f2937' }}
+          >
+            Read the paragraph aloud
+          </p>
+          <RecordButton referenceText={currentParagraph.text} onComplete={handleRecordComplete} />
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <ResultsDisplay
+            results={sessionResult ? sessionResult.results : []}
+            accuracy={sessionResult ? sessionResult.accuracy : 0}
+          />
+
+          {nextParagraphExists ? (
+            <Button
+              id="next-paragraph-btn"
+              onClick={handleNextParagraph}
+              size="lg"
+              className="w-full py-6 text-base"
+            >
+              Next Paragraph
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          ) : (
+            <div className="space-y-4 animate-fade-in-up">
+              <div
+                className="glass-card p-10 text-center"
+                style={{ background: 'linear-gradient(135deg, rgba(240,253,250,0.9), rgba(255,250,244,0.9))' }}
+              >
+                <div
+                  className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
+                  style={{ background: 'linear-gradient(135deg, #f0fdfa, #ccfbf1)' }}
+                >
+                  🎉
+                </div>
+                <p
+                  className="text-2xl font-extrabold mb-2"
+                  style={{ fontFamily: 'Outfit, sans-serif', color: '#0f766e' }}
+                >
+                  Session Complete!
+                </p>
+                <p style={{ color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
+                  You&apos;ve finished all paragraphs in this session.
+                </p>
+              </div>
+              <Link href="/" className="block">
+                <Button id="back-to-dashboard-btn" size="lg" variant="outline" className="w-full py-6 text-base">
+                  <Home className="mr-2 h-5 w-5" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
