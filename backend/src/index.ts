@@ -224,50 +224,155 @@ app.get('/teacher-students', async (req: Request, res: Response): Promise<any> =
 //three practice sets 
 //user-likely paragrpah generation()
 //empty text box (by default a text)
-function sysIns(context:string){
-  const systemInstructions=`
+function sysIns(context: string, adaptivePrompt: string) {
+  const systemInstructions = `
   You are a paragraph generator for a phonics app, in which your paragraph would be read by users and the phonics would be analyzed with that voice.
   Output should be in this format-
   {
     "text1": "this is the first paragraph",
-    "focus_words_1":[],
+    "focus_words_1":[{"word": "word1", "phoneme": "phoneme1"}, ...],
     "text2": "this is the second paragraph",  
-    "focus_words_2":[],
+    "focus_words_2":[{"word": "word2", "phoneme": "phoneme2"}, ...],
     "text3": "this is the third paragraph",   
-    "focus_words_3":[], 
+    "focus_words_3":[{"word": "word3", "phoneme": "phoneme3"}, ...]
   }
-  No markdown in the output.Also provide focus words for each text paragraph. Focus Words are the words that the users needs to focus more on during 
-  dictation.Also there is a user choice for the paragraph generation , if it empty string, then dont consider it.Each paragraph must be of 20 words.
+  No markdown in the output. Keep it strictly as valid JSON.
+  Also provide focus words for each text paragraph. For each focus word, specify both the "word" and its associated "phoneme" category (like "TH Sounds", "V/W Confusion", etc.).
+  Also there is a user choice for the paragraph generation , if it empty string, then dont consider it.Each paragraph must be of 20 words.
   Each paragraph should contain two sentences.
-  ${context}
-  `
-  return systemInstructions
-}
-app.post("/generate-sentence",async(req:Request,res:Response)=>{
-    res.setHeader("Content-Type", "text/plain");
-    res.setHeader("Transfer-Encoding", "chunked");
-    const {choice}=req.body;
-    const instruction=sysIns(choice)
-    const completion =await client.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [
-      {
-        role: "system",
-        content:instruction,
-      },
-    ],
-    temperature: 1,
-    max_completion_tokens: 200,
-    top_p: 1,
-    stream: true,
-    stop: null,
-  });
   
-  for await (const chunk of completion){
-    res.write(chunk.choices[0]?.delta?.content)
+  ${adaptivePrompt}
+  ${context ? `User requested topic/choice: ${context}` : ""}
+  `;
+  return systemInstructions;
+}
+
+app.post("/generate-sentence", async (req: Request, res: Response): Promise<any> => {
+  res.setHeader("Content-Type", "text/plain");
+  res.setHeader("Transfer-Encoding", "chunked");
+  const { choice, userId, studentId } = req.body;
+
+  let assessments: any[] = [];
+  try {
+    if (studentId) {
+      assessments = await prisma.assessmentStudent.findMany({
+        where: { student_id: studentId },
+        orderBy: { time_created: "asc" },
+      });
+    } else if (userId) {
+      assessments = await prisma.assessment.findMany({
+        where: { user_id: userId },
+        orderBy: { time_created: "asc" },
+      });
+    }
+  } catch (dbError) {
+    console.error("Failed to fetch assessments for adaptive generation:", dbError);
   }
- res.end()
-})
+
+  const errorCounts: Record<string, number> = {};
+  const recentWordsMap: Record<string, { totalAttempts: number; errorCount: number; lastAccuracy: number }> = {};
+  
+  for (const a of assessments) {
+    if (a.error) {
+      try {
+        const errorTypes: string[] = JSON.parse(a.error);
+        for (const type of errorTypes) {
+          errorCounts[type] = (errorCounts[type] || 0) + 1;
+        }
+      } catch {}
+    }
+  }
+  
+  const lastAssessments = assessments.slice(-5);
+  for (const a of lastAssessments) {
+    if (a.words) {
+      try {
+        const parsed: any[] = JSON.parse(a.words);
+        for (const w of parsed) {
+          const word = (w.word || "").toLowerCase().trim();
+          if (!word) continue;
+          const accuracy = w.accuracyScore ?? 100;
+          const isError = w.errorType && w.errorType !== "None";
+          
+          if (!recentWordsMap[word]) {
+            recentWordsMap[word] = { totalAttempts: 0, errorCount: 0, lastAccuracy: accuracy };
+          }
+          recentWordsMap[word].totalAttempts++;
+          if (isError || accuracy < 80) {
+            recentWordsMap[word].errorCount++;
+          }
+          recentWordsMap[word].lastAccuracy = accuracy;
+        }
+      } catch {}
+    }
+  }
+  
+  const persistentErrorWords = Object.entries(recentWordsMap)
+    .filter(([_, stats]) => stats.errorCount > 0 && stats.lastAccuracy < 80)
+    .map(([word]) => word);
+    
+  const sessionCount = assessments.length;
+  const sum_pron = assessments.reduce((acc, a) => acc + (a.pronunciation ?? 0), 0);
+  const avg_pron = sessionCount > 0 ? sum_pron / sessionCount : 0;
+  
+  let difficulty = "beginner";
+  if (sessionCount >= 5 && sessionCount <= 20) {
+    difficulty = avg_pron >= 75 ? "intermediate" : "beginner";
+  } else if (sessionCount > 20) {
+    difficulty = avg_pron >= 80 ? "advanced" : "intermediate";
+  }
+  
+  let adaptivePrompt = "";
+  if (assessments.length > 0) {
+    const topWeakSounds = Object.entries(errorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name]) => name);
+      
+    adaptivePrompt = `
+    Target difficulty level: ${difficulty.toUpperCase()}.
+    Make sure the paragraphs are written for a ${difficulty} level reader.
+    
+    The user is struggling with the following phonics categories:
+    ${topWeakSounds.length > 0 ? topWeakSounds.join(", ") : "None specified. Focus on general pronunciation."}
+    Please design paragraphs that heavily feature sounds and word patterns from these categories.
+    
+    Specifically, try to include some of these persistent error words that the user has mispronounced recently:
+    ${persistentErrorWords.length > 0 ? persistentErrorWords.join(", ") : "None specified."}
+    `;
+  } else {
+    adaptivePrompt = `
+    Target difficulty level: BEGINNER.
+    The user has no previous sessions. Generate friendly, beginner-level phonics paragraphs.
+    `;
+  }
+
+  const instruction = sysIns(choice, adaptivePrompt);
+  
+  try {
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: instruction,
+        },
+      ],
+      temperature: 0.7,
+      max_completion_tokens: 1200,
+      top_p: 1,
+      stream: true,
+      stop: null,
+    });
+    
+    for await (const chunk of completion) {
+      res.write(chunk.choices[0]?.delta?.content || "");
+    }
+  } catch (apiError) {
+    console.error("LLM completion failed:", apiError);
+  }
+  res.end();
+});
 
 function pronounciationSysIns(azure_output:any){
   const sysIns=`
