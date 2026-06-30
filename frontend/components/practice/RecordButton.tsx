@@ -132,7 +132,7 @@ export function RecordButton({ referenceText, onComplete }: RecordButtonProps) {
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.msg || 'Pronunciation assessment failed.');
+        throw new Error(errData.msg || 'Phonics assessment failed.');
       }
 
       const apiResult = await response.json();
@@ -212,7 +212,7 @@ export function RecordButton({ referenceText, onComplete }: RecordButtonProps) {
             className="text-lg font-bold"
             style={{ fontFamily: 'Outfit, sans-serif', color: '#1f2937' }}
           >
-            Analyzing your pronunciation...
+            Analyzing your phonics...
           </p>
           <p className="text-sm mt-1" style={{ color: '#6b7280' }}>
             This may take a few seconds

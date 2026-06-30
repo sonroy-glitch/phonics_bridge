@@ -36,16 +36,21 @@ export default function SignInPage() {
     setError('');
     setLoading(true);
 
+    // Trim all text fields before submission
+    const trimmedEmail = email.trim();
+    const trimmedRollNumber = rollNumber.trim();
+    const trimmedTeacherCode = teacherCode.trim();
+
     try {
       if (role === 'teacher' || role === 'learner') {
-        await signIn(email, password, role === 'teacher');
+        await signIn(trimmedEmail, password, role === 'teacher');
         if (role === 'teacher') {
           router.push('/teacher');
         } else {
           router.push('/');
         }
       } else {
-        await studentSignIn(rollNumber, teacherCode);
+        await studentSignIn(trimmedRollNumber, trimmedTeacherCode);
         router.push('/');
       }
     } catch (err: any) {
@@ -64,34 +69,34 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 relative">
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
 
         {/* ── Logo ── */}
-        <div className="flex items-center justify-center gap-3 mb-8">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
           <div
-            className="w-14 h-14 rounded-3xl flex items-center justify-center shadow-lg"
+            className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-lg flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #0d9488, #0f766e)' }}
           >
-            <GraduationCap className="w-8 h-8 text-white" />
+            <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
           <div>
             <h1
-              className="text-3xl font-extrabold leading-none"
+              className="text-2xl sm:text-3xl font-extrabold leading-none"
               style={{ fontFamily: 'Outfit, sans-serif', color: '#1f2937', letterSpacing: '-0.02em' }}
             >
               Phonics<span style={{ color: '#0d9488' }}>Bridge</span>
             </h1>
             <p className="text-xs mt-0.5" style={{ color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
-              Master your pronunciation
+              Master your phonics
             </p>
           </div>
         </div>
 
         {/* ── Card ── */}
         <div
-          className="glass-card-flat p-8"
+          className="glass-card-flat p-5 sm:p-8"
           style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.08)' }}
         >
           {/* Card header */}

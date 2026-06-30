@@ -15,6 +15,36 @@ import { PreviousSessions } from '@/components/dashboard/PreviousSessions';
 import Link from 'next/link';
 import { BookOpen, ArrowRight, Mic, BarChart2, Target, Users, Sparkles, Play } from 'lucide-react';
 
+function Footer() {
+  return (
+    <footer
+      className="w-full mt-12 py-8 px-4 text-center border-t transition-all duration-200"
+      style={{
+        borderColor: '#ece7df',
+        background: 'rgba(255, 255, 255, 0.4)',
+        backdropFilter: 'blur(8px)',
+        fontFamily: 'Inter, sans-serif'
+      }}
+    >
+      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p className="text-sm" style={{ color: '#6b7280' }}>
+          &copy; {new Date().getFullYear()} PhonicsFlow. All rights reserved.
+        </p>
+        <p className="text-sm" style={{ color: '#4b5563', fontWeight: 500 }}>
+          If you have any queries, contact us at:{' '}
+          <a
+            href="mailto:phonicsflow3@gmail.com"
+            className="font-semibold transition-colors duration-150 hover:underline"
+            style={{ color: '#0d9488' }}
+          >
+            phonicsflow3@gmail.com
+          </a>
+        </p>
+      </div>
+    </footer>
+  );
+}
+
 /* ─── Landing Page for unauthenticated users ─── */
 function LandingPage() {
   return (
@@ -42,7 +72,7 @@ function LandingPage() {
 
             {/* Sub */}
             <p className="text-lg leading-relaxed max-w-md" style={{ color: '#4b5563', fontFamily: 'Inter, sans-serif' }}>
-              PhonicsFlow helps students improve pronunciation, build confidence, and track progress — one sound at a time.
+              PhonicsFlow helps students improve phonics, build confidence, and track progress — one sound at a time.
             </p>
 
             {/* CTAs */}
@@ -56,13 +86,13 @@ function LandingPage() {
                   Get Started
                 </button>
               </Link>
-              <button
+              {/* <button
                 className="flex items-center gap-2.5 px-7 py-3.5 rounded-full text-base font-semibold border-2 transition-all duration-200 hover:bg-gray-50"
                 style={{ borderColor: '#d1d5db', color: '#374151', fontFamily: 'Inter, sans-serif' }}
               >
                 <Play className="w-4 h-4" />
                 Watch Demo
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -177,7 +207,7 @@ function LandingPage() {
               iconBg: 'rgba(13,148,136,0.12)',
               iconColor: '#0d9488',
               title: 'Speak & Practice',
-              desc: 'Record your voice and get instant pronunciation feedback.',
+              desc: 'Record your voice and get instant phonics feedback.',
             },
             {
               icon: <BarChart2 className="w-7 h-7" />,
@@ -216,6 +246,7 @@ function LandingPage() {
           ))}
         </div>
       </section>
+      <Footer />
     </div>
   );
 }
@@ -364,6 +395,7 @@ export default function RootPage() {
       <WordsList words={mappedWords} />
       <PreviousSessions sessions={sessions} isLoading={loadingStats} />
       <SoundsFixed soundsFixed={fixedSounds} />
+      <Footer />
     </div>
   );
 }

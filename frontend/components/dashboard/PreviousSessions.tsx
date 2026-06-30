@@ -194,7 +194,7 @@ export function PreviousSessions({ sessions, isLoading, title = "Previous Practi
                     <div className="space-y-2">
                       <h4 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: '#6b7280' }}>
                         <Trophy className="w-3.5 h-3.5 text-teal-600" />
-                        Pronunciation Breakdown
+                        Phonics Breakdown
                       </h4>
                       <div className="flex flex-wrap gap-2 p-4 rounded-2xl bg-white border" style={{ borderColor: '#ece7df' }}>
                         {parsedWords.map((wordObj, wIdx) => {

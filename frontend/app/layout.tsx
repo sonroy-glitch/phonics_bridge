@@ -6,8 +6,8 @@ import { DoodleBackground } from "@/components/DoodleBackground";
 import { ChatWidget } from "@/components/ChatWidget";
 
 export const metadata: Metadata = {
-  title: "PhonicsFlow — Master Your Pronunciation",
-  description: "A modern phonics learning platform for students and teachers. Practice pronunciation, track progress, and improve your speaking skills.",
+  title: "PhonicsFlow — Master Your Phonics",
+  description: "A modern phonics learning platform for students and teachers. Practice phonics, track progress, and improve your speaking skills.",
 };
 
 export default function RootLayout({

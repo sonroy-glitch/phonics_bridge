@@ -31,7 +31,7 @@ export const weakSounds: PhonemePattern[] = [
   {
     id: 'short-e-1',
     name: 'Short-E Sound',
-    description: 'Proper pronunciation of short /ε/ as in "bed"',
+    description: 'Proper phonics of short /ε/ as in "bed"',
     errorCount: 18,
     lastSeen: 'yesterday',
     status: 'improving',
@@ -47,7 +47,7 @@ export const weakSounds: PhonemePattern[] = [
   {
     id: 'r-1',
     name: 'R Sound',
-    description: 'Correct pronunciation of /r/ sound',
+    description: 'Correct phonics of /r/ sound',
     errorCount: 12,
     lastSeen: 'today',
     status: 'improving',
@@ -59,7 +59,7 @@ export const soundsFixed: PhonemePattern[] = [
   {
     id: 's-1',
     name: 'S Sound',
-    description: 'Clear /s/ pronunciation',
+    description: 'Clear /s/ phonics',
     errorCount: 0,
     lastSeen: '1 week ago',
     status: 'resolved',
@@ -67,7 +67,7 @@ export const soundsFixed: PhonemePattern[] = [
   {
     id: 'z-1',
     name: 'Z Sound',
-    description: 'Voiced /z/ pronunciation',
+    description: 'Voiced /z/ phonics',
     errorCount: 0,
     lastSeen: '5 days ago',
     status: 'resolved',
@@ -217,7 +217,7 @@ export const allPhonemePatterns: PhonemePattern[] = [
   {
     id: 'sh-1',
     name: 'SH Sound',
-    description: 'Clear /ʃ/ pronunciation',
+    description: 'Clear /ʃ/ phonics',
     errorCount: 8,
     lastSeen: '1 week ago',
     status: 'improving',
@@ -225,7 +225,7 @@ export const allPhonemePatterns: PhonemePattern[] = [
   {
     id: 'ch-1',
     name: 'CH Sound',
-    description: 'Proper /tʃ/ pronunciation',
+    description: 'Proper /tʃ/ phonics',
     errorCount: 6,
     lastSeen: '2 weeks ago',
     status: 'needs-work',

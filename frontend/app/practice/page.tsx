@@ -224,7 +224,7 @@ export default function PracticePage() {
             className="text-sm font-semibold mb-1"
             style={{ color: '#0d9488', fontFamily: 'Inter, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: '11px' }}
           >
-            Pronunciation Check
+            Phonics Check
           </p>
           <p
             className="text-xl font-bold mb-6"

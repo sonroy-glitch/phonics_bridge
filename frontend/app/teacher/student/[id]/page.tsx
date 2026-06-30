@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft, Flame, Calendar, Target } from 'lucide-react';
 import type { StudentProfile } from '@/lib/types';
 import { PreviousSessions } from '@/components/dashboard/PreviousSessions';
+import { WordsList } from '@/components/dashboard/WordsList';
 
 export default function StudentDetailPage() {
   const router = useRouter();
@@ -16,7 +17,9 @@ export default function StudentDetailPage() {
   const { user, isLoading } = useAuth();
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [improvedWords, setImprovedWords] = useState<any[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
+  const [loadingWords, setLoadingWords] = useState(true);
 
   const studentId = params?.id as string;
 
@@ -27,6 +30,7 @@ export default function StudentDetailPage() {
     }
 
     if (studentId && user?.id) {
+      // Fetch student profile
       fetch(`${BASE_API_URL}/teacher-students?userId=${user.id}`)
         .then((res) => {
           if (!res.ok) throw new Error('Failed to fetch students');
@@ -38,6 +42,7 @@ export default function StudentDetailPage() {
         })
         .catch((err) => console.error(err));
 
+      // Fetch sessions
       setLoadingSessions(true);
       fetch(`${BASE_API_URL}/sessions?studentId=${studentId}`)
         .then((res) => {
@@ -47,8 +52,45 @@ export default function StudentDetailPage() {
         .then((data) => setSessions(data.sessions || []))
         .catch((err) => console.error(err))
         .finally(() => setLoadingSessions(false));
+
+      // Fetch improved words
+      setLoadingWords(true);
+      fetch(`${BASE_API_URL}/improved_words?studentId=${studentId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch improved words');
+          return res.json();
+        })
+        .then((data) => setImprovedWords(data.improved_words || []))
+        .catch((err) => console.error(err))
+        .finally(() => setLoadingWords(false));
     }
   }, [user, isLoading, studentId, router]);
+
+  // Map raw improved_words into the shape WordsList expects
+  const mappedWords = improvedWords.map((w: any, index: number) => {
+    const attempts = w.sessions_practiced || 1;
+    const latestAcc = w.latest_accuracy || 0;
+    const errorCount = Math.round(attempts * (1 - latestAcc / 100));
+    const lastSession =
+      w.history && w.history.length > 0 ? w.history[w.history.length - 1] : null;
+    const lastPracticed = lastSession
+      ? new Date(lastSession.time_created).toLocaleDateString()
+      : 'Recently';
+
+    return {
+      id: `word-${index}`,
+      word: w.word,
+      errorCount,
+      totalAttempts: attempts,
+      trend:
+        w.improvement > 0
+          ? ('improving' as const)
+          : w.improvement < 0
+          ? ('declining' as const)
+          : ('stable' as const),
+      lastPracticed,
+    };
+  });
 
   if (isLoading) {
     return (
@@ -167,8 +209,22 @@ export default function StudentDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Words Practiced */}
+      <div className="animate-fade-in-up delay-300">
+        {loadingWords ? (
+          <div className="glass-card p-8 flex flex-col items-center gap-3">
+            <div className="spinner" />
+            <p className="text-sm font-medium" style={{ color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
+              Loading words practiced...
+            </p>
+          </div>
+        ) : (
+          <WordsList words={mappedWords} />
+        )}
+      </div>
+
       {/* Student's Previous Sessions */}
-      <div className="animate-fade-in-up delay-300 pt-4" style={{ borderTop: '1px solid #ece7df' }}>
+      <div className="animate-fade-in-up delay-400 pt-4" style={{ borderTop: '1px solid #ece7df' }}>
         <PreviousSessions sessions={sessions} isLoading={loadingSessions} title={`${student.name}'s Previous Sessions`} />
       </div>
     </div>

@@ -39,7 +39,7 @@ export function AccuracyChart({ accuracyData = [] }: AccuracyChartProps) {
               Accuracy Trend
             </h2>
             <p className="text-xs" style={{ color: '#6b7280' }}>
-              Your pronunciation progress over time
+              Your phonics progress over time
             </p>
           </div>
         </div>

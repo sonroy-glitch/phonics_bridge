@@ -56,7 +56,7 @@ export function Navbar() {
             </Link>
 
             {/* Nav links */}
-            <nav className="hidden md:flex items-center gap-1">
+            {/* <nav className="hidden md:flex items-center gap-1">
               {['Features', 'How It Works', 'For Teachers', 'For Students', 'Pricing'].map((item) => (
                 <a
                   key={item}
@@ -75,7 +75,7 @@ export function Navbar() {
                   {item}
                 </a>
               ))}
-            </nav>
+            </nav> */}
 
             {/* Auth buttons */}
             <div className="flex items-center gap-3">

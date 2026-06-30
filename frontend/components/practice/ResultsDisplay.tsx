@@ -10,7 +10,7 @@ interface ResultsDisplayProps {
 
 export function ResultsDisplay({ results, accuracy }: ResultsDisplayProps) {
   const getAccuracyTheme = (acc: number) => {
-    if (acc >= 80) return { stroke: '#059669', text: '#059669', bg: 'rgba(5,150,105,0.08)', label: 'Excellent work! 🎉', sublabel: 'Your pronunciation is on point!' };
+    if (acc >= 80) return { stroke: '#059669', text: '#059669', bg: 'rgba(5,150,105,0.08)', label: 'Excellent work! 🎉', sublabel: 'Your phonics is on point!' };
     if (acc >= 60) return { stroke: '#fbbf24', text: '#d97706', bg: 'rgba(251,191,36,0.08)', label: 'Good effort! 💪', sublabel: 'Keep practicing to reach 80%+' };
     return { stroke: '#fb7185', text: '#e11d48', bg: 'rgba(251,113,133,0.08)', label: 'Keep going! 📚', sublabel: "Every session makes you better" };
   };

@@ -240,9 +240,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .pill-tab {
   flex: 1;
-  padding: 0.5rem 1.25rem;
+  padding: 0.375rem 0.5rem;
   border-radius: 9999px;
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
@@ -251,6 +251,14 @@ h1, h2, h3, h4, h5, h6 {
   background: transparent;
   border: none;
   outline: none;
+  white-space: nowrap;
+}
+
+@media (min-width: 400px) {
+  .pill-tab {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+  }
 }
 
 .pill-tab.active {

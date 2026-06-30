@@ -37,29 +37,35 @@ export default function SignUpPage() {
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) {
+    // Trim all text fields
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedRoleNumber = roleNumber.trim();
+    const trimmedTeacherCode = teacherCode.trim();
+
+    if (!trimmedName) {
       setError('Please enter your name');
       return;
     }
 
     if (role === 'teacher' || role === 'learner') {
-      if (!email.trim()) { setError('Please enter your email'); return; }
+      if (!trimmedEmail) { setError('Please enter your email'); return; }
       if (!password.trim()) { setError('Please enter a password'); return; }
       if (password !== confirmPassword) { setError('Passwords do not match'); return; }
       if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
     } else {
-      if (!roleNumber.trim()) { setError('Please enter your role number'); return; }
-      if (!teacherCode.trim()) { setError('Please enter your teacher code'); return; }
+      if (!trimmedRoleNumber) { setError('Please enter your role number'); return; }
+      if (!trimmedTeacherCode) { setError('Please enter your teacher code'); return; }
     }
 
     setLoading(true);
 
     try {
       const metadata = (role === 'teacher' || role === 'learner')
-        ? { name }
-        : { name, roleNumber, teacherCode };
+        ? { name: trimmedName }
+        : { name: trimmedName, roleNumber: trimmedRoleNumber, teacherCode: trimmedTeacherCode };
 
-      await signUp(email, password, role, metadata);
+      await signUp(trimmedEmail, password, role, metadata);
 
       if (role === 'teacher') {
         router.push('/teacher');
@@ -83,35 +89,32 @@ export default function SignUpPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative"
+      className="min-h-screen flex items-center justify-center px-4 py-8 relative"
     >
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
 
         {/* ── Logo ── */}
-        <div className="flex items-center justify-center gap-3 mb-8">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
           <div
-            className="w-14 h-14 rounded-3xl flex items-center justify-center shadow-lg"
+            className="w-10 h-10 sm:w-14 sm:h-14 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-lg flex-shrink-0"
             style={{ background: 'linear-gradient(135deg, #0d9488, #0f766e)' }}
           >
-            <GraduationCap className="w-8 h-8 text-white" />
+            <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
           <div>
             <h1
-              className="text-3xl font-extrabold leading-none"
+              className="text-2xl sm:text-3xl font-extrabold leading-none"
               style={{ fontFamily: 'Outfit, sans-serif', color: '#1f2937', letterSpacing: '-0.02em' }}
             >
               Phonics<span style={{ color: '#0d9488' }}> Bridge</span>
             </h1>
-            <p className="text-xs mt-0.5" style={{ color: '#6b7280', fontFamily: 'Inter, sans-serif' }}>
-              Join thousands of learners
-            </p>
           </div>
         </div>
 
         {/* ── Card ── */}
         <div
-          className="glass-card-flat p-8"
+          className="glass-card-flat p-5 sm:p-8"
           style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.08)' }}
         >
           {/* Card header */}
