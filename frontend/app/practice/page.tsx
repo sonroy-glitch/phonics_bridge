@@ -1,6 +1,4 @@
-      // Azure's composite pronunciation score (folds in fluency + completeness),
-      // matching what the adaptive-difficulty logic grades progression on.
-      accuracy: Math.round(apiData.scores?.pronunciation ?? apiData.scores?.accuracy ?? 0),'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';

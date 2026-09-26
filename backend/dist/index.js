@@ -265,13 +265,16 @@ function sysIns(context, adaptivePrompt) {
   Output should be in this format-
   {
     "text1": "this is the first paragraph",
-    "focus_words_1":[{"word": "word1", "phoneme": "phoneme1", "hindi": "हिन्दी phonetic breakdown", "sounds_like": "sounds · like · guide"}, ...],
+    "focus_words_1":[{"word": "word1", "phoneme": "phoneme1", "hindi": "हिन्दी phonetic breakdown", "sounds_like": "sounds · like · guide"}],
     "text2": "this is the second paragraph",  
-    "focus_words_2":[{"word": "word2", "phoneme": "phoneme2", "hindi": "हिन्दी phonetic breakdown", "sounds_like": "sounds · like · guide"}, ...],
+    "focus_words_2":[{"word": "word2", "phoneme": "phoneme2", "hindi": "हिन्दी phonetic breakdown", "sounds_like": "sounds · like · guide"}],
     "text3": "this is the third paragraph",   
-    "focus_words_3":[{"word": "word3", "phoneme": "phoneme3", "hindi": "हिन्दी phonetic breakdown", "sounds_like": "sounds · like · guide"}, ...]
+    "focus_words_3":[{"word": "word3", "phoneme": "phoneme3", "hindi": "हिन्दी phonetic breakdown", "sounds_like": "sounds · like · guide"}]
   }
   No markdown in the output. Keep it strictly as valid JSON.
+  Emit ONLY the JSON object - no code fences, no commentary before or after it.
+  Give each focus_words array 3 to 5 complete entries. Never write "..." or any
+  other placeholder in the output, and never leave a trailing comma.
   Also provide focus words for each text paragraph. For each focus word, specify:
   1. The English "word" itself.
   2. Its associated "phoneme" category (like "TH Sounds", "V/W Confusion", etc.).
@@ -392,7 +395,14 @@ app.post("/generate-sentence", async (req, res) => {
                 },
             ],
             temperature: 0.7,
-            max_completion_tokens: 1200,
+            // Three paragraphs plus three focus_words arrays (each word carrying hindi
+            // and sounds_like) is a large JSON payload, and a reasoning model spends
+            // tokens thinking before it emits any. Too low a cap truncates the response
+            // mid-JSON, which surfaces as blank second/third paragraphs.
+            max_completion_tokens: 4000,
+            // The client parses this stream as JSON, so guarantee syntactic validity
+            // here rather than relying on the prompt alone.
+            response_format: { type: "json_object" },
             top_p: 1,
             stream: true,
             stop: null,
@@ -1059,7 +1069,26 @@ Your goal is to help them understand their pronunciation errors, give tips on ho
 
 Keep your answers relatively concise, warm, and easy to understand (especially if talking to a student). Use phonics notations like /sh/ or /th/ when referencing sounds.
 ${performanceSummary ? `\nUse this context about the user's performance to answer their questions:\n${performanceSummary}` : ""}
-Always speak directly to the user. Provide practical pronunciation tips, mouth positioning guidance (e.g. "put your tongue between your teeth for the /th/ sound"), or encouragement.`;
+Always speak directly to the user. Provide practical pronunciation tips, mouth positioning guidance (e.g. "put your tongue between your teeth for the /th/ sound"), or encouragement.
+
+OUTPUT FORMAT - follow these rules strictly.
+The chat window renders plain text and understands ONLY two pieces of markup:
+  - **bold text**
+  - lines beginning with "- " for bullet points
+Anything else is shown to the user as raw characters and looks broken.
+
+Therefore you MUST NOT use:
+  - tables or any "|" pipe characters
+  - headings of any kind (#, ##, ###)
+  - numbered lists ("1.", "2."); write bullets with "- " instead
+  - horizontal rules (---, ***)
+  - code blocks, backticks, or blockquotes (>)
+  - emoji used as section headers or numbered badges
+
+Write in short plain sentences and keep paragraphs to 1-3 lines, separated by a
+blank line. Use "- " bullets for any list, and **bold** only to highlight a word
+or sound being practised. Keep the whole reply under about 150 words. When you
+need to show syllable stress, write it inline like **PIC**-ture, not in a table.`;
         const chatMessages = [
             { role: "system", content: systemPrompt },
             ...messages
@@ -1169,10 +1198,14 @@ async function generateReportForTeacher(teacher, now, periodLabel) {
         let studentAccCount = 0;
         const studentWords = {};
         for (const assess of student.assessment) {
-            if (assess.accuracy !== null && assess.accuracy !== undefined) {
-                totalAccuracySum += assess.accuracy;
+            // Report on Azure's composite pronunciation score (folds in fluency +
+            // completeness), matching the session ring and dashboard chart.
+            // Fall back to accuracy for rows written before that switch.
+            const sessionScore = assess.pronunciation ?? assess.accuracy;
+            if (sessionScore !== null && sessionScore !== undefined) {
+                totalAccuracySum += sessionScore;
                 totalAccuracyCount++;
-                studentAccSum += assess.accuracy;
+                studentAccSum += sessionScore;
                 studentAccCount++;
             }
             if (assess.words) {
